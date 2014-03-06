@@ -1,0 +1,146 @@
+﻿using SimuVault.ViewModels;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+using System.Windows;
+using System.Windows.Controls;
+using System.Windows.Data;
+using System.Windows.Documents;
+using System.Windows.Input;
+using System.Windows.Media;
+using System.Windows.Media.Imaging;
+using System.Windows.Navigation;
+using System.Windows.Shapes;
+
+namespace SimuVault
+{
+    /// <summary>
+    /// Interaction logic for MainWindow.xaml
+    /// </summary>
+    public partial class MainWindow : Window
+    {
+        private VaultVM dataViewModel;
+        private void SetViewModel(VaultVM vm)
+        {
+            dataViewModel = vm;
+            dataViewModel.ResetChanges();
+            this.DataContext = dataViewModel;
+        }
+
+        public MainWindow()
+        {
+            InitializeComponent();
+
+            SetViewModel(new VaultVM());
+
+            this.Left = SimuVault.Properties.Settings.Default.LastLeft;
+            this.Top = SimuVault.Properties.Settings.Default.LastTop;
+
+            this.Loaded += (s, e) =>
+                {
+                    try
+                    {
+                        if (AppDomain.CurrentDomain.SetupInformation.ActivationArguments != null &&
+                                        AppDomain.CurrentDomain.SetupInformation.ActivationArguments.ActivationData != null &&
+                                        AppDomain.CurrentDomain.SetupInformation.ActivationArguments.ActivationData.Any())
+                        {
+                            string[] activationData = AppDomain.CurrentDomain.SetupInformation.ActivationArguments.ActivationData;
+                            var uri = new Uri(activationData[0]);
+
+                            if (dataViewModel.CloseCommand())
+                            {
+                                VaultVM vault = VaultVM.OpenCommandDirect(uri.AbsolutePath);
+                                if (vault != null)
+                                {
+                                    SetViewModel(vault);
+                                    this.MainLayout.Visibility = System.Windows.Visibility.Visible;
+                                }
+                            }
+
+                        }
+                    }
+                    catch { }
+
+                };
+        }
+
+        protected override void OnClosing(System.ComponentModel.CancelEventArgs e)
+        {
+            if (!dataViewModel.CloseCommand())
+            {
+                e.Cancel = true;
+                return;
+            }
+
+            SimuVault.Properties.Settings.Default.LastLeft = (int)this.Left;
+            SimuVault.Properties.Settings.Default.LastTop = (int)this.Top;
+            SimuVault.Properties.Settings.Default.Save();
+
+            base.OnClosing(e);
+        }
+
+        private void ExitApplication_Click(object sender, RoutedEventArgs e)
+        {
+            this.Close();
+        }
+
+        private void NewVault_Click(object sender, RoutedEventArgs e)
+        {
+            if (dataViewModel.CloseCommand())
+            {
+                SetViewModel(new VaultVM());
+                this.MainLayout.Visibility = System.Windows.Visibility.Visible;
+            }
+        }
+
+        private void OpenVault_Click(object sender, RoutedEventArgs e)
+        {
+            if (dataViewModel.CloseCommand())
+            {
+                VaultVM vault = VaultVM.OpenCommand();
+                if (vault != null)
+                {
+                    SetViewModel(vault);
+                    this.MainLayout.Visibility = System.Windows.Visibility.Visible;
+                }
+            }
+        }
+
+        private void SaveVault_Click(object sender, RoutedEventArgs e)
+        {
+            dataViewModel.SaveCommand();
+        }
+
+        private void SaveAsVault_Click(object sender, RoutedEventArgs e)
+        {
+            dataViewModel.SaveAsCommand();
+        }
+
+        private void DeleteItem_Click(object sender, RoutedEventArgs e)
+        {
+            dataViewModel.DeleteKeyPairCommand();
+        }
+
+        private void AddItem_Click(object sender, RoutedEventArgs e)
+        {
+            dataViewModel.AddKeyPairCommand(dataViewModel.SelectedGroup.Title);
+        }       
+
+        private void AddGroup_Click(object sender, RoutedEventArgs e)
+        {
+            dataViewModel.AddGroupCommand();
+        }
+
+        private void DeleteGroup_Click(object sender, RoutedEventArgs e)
+        {
+            dataViewModel.DeleteGroupCommand();
+        } 
+        
+        private void About_Click(object sender, RoutedEventArgs e)
+        {
+            (new About()).ShowDialog();
+        }
+    }
+}

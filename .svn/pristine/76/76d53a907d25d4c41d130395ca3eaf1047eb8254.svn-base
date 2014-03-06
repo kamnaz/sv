@@ -1,0 +1,216 @@
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.ComponentModel;
+using System.Xml.Serialization;
+using System.IO;
+using System.Collections.ObjectModel;
+
+namespace Common
+{
+    /// <summary>
+    /// Allows serialization and deserialization of an observable class object
+    /// </summary>
+    /// <typeparam name="T"></typeparam>
+    public class Serializable<T> : Observable
+    {
+        /// <summary>
+        /// Writes to XML (Serialize)
+        /// </summary>
+        /// <param name="FileName"></param>
+        public void WriteXML(string FileName)
+        {
+            try
+            {
+                XmlSerializer xs = new XmlSerializer(typeof(T));
+                using (StreamWriter wr = new StreamWriter(FileName))
+                    xs.Serialize(wr, this);
+            }
+            catch { }
+        }
+
+        /// <summary>
+        /// Writes to XML (Serialize)
+        /// </summary>
+        /// <returns></returns>
+        public byte[] WriteXML()
+        {
+            try
+            {
+                using (MemoryStream MemoryData = new MemoryStream())
+                {
+                    XmlSerializer xs = new XmlSerializer(typeof(T));
+                    using (StreamWriter wr = new StreamWriter(MemoryData))
+                        xs.Serialize(wr, this);
+
+                    return MemoryData.ToArray();
+                }
+            }
+            catch { return null; }
+        }        
+
+        /// <summary>
+        /// Reads from XML (Deserialize)
+        /// </summary>
+        /// <param name="FileName"></param>
+        public T ReadXML(string FileName)
+        {
+            try
+            {
+                XmlSerializer xs = new XmlSerializer(typeof(T));
+                using (StreamReader rd = new StreamReader(FileName))
+                    return (T)xs.Deserialize(rd);
+            }
+            catch { return default(T); }
+        }
+
+        /// <summary>
+        /// Reads from XML (Deserialize)
+        /// </summary>
+        /// <param name="MemoryData"></param>
+        public T ReadXML(Stream Data)
+        {
+            try
+            {
+                using (MemoryStream MemoryData = new MemoryStream(ReadFully(Data)))
+                {
+                    XmlSerializer xs = new XmlSerializer(typeof(T));
+                    return (T)xs.Deserialize(MemoryData);
+                }
+            }
+            catch { return default(T); }
+        }
+
+        public T ReadXML(MemoryStream Data)
+        {
+            try
+            {
+                using (MemoryStream MemoryData = Data)
+                {
+                    XmlSerializer xs = new XmlSerializer(typeof(T));
+                    return (T)xs.Deserialize(MemoryData);
+                }
+            }
+            catch { return default(T); }
+        }
+
+        public static byte[] ReadFully(Stream input)
+        {
+            using (MemoryStream ms = new MemoryStream())
+            {
+                input.CopyTo(ms);
+                return ms.ToArray();
+            }
+        }
+
+
+        /// <summary>
+        /// Reads an XML string (Deserialize)
+        /// </summary>
+        /// <param name="Data">The data.</param>
+        /// <returns></returns>
+        public T ReadXmlString(string Data)
+        {
+            try
+            {
+                XmlSerializer xs = new XmlSerializer(typeof(T));
+                using (StreamReader rd = new StreamReader(StringToMemoryStream(Data)))
+                    return (T)xs.Deserialize(rd);
+            }
+            catch { return default(T); }
+        }
+
+        /// <summary>
+        /// Reads from a Base64 XML string (Deserialize)
+        /// </summary>
+        /// <param name="Data64bit">The data64.</param>
+        /// <returns></returns>
+        public T ReadXmlString64(string Data64)
+        {
+            try
+            {
+                XmlSerializer xs = new XmlSerializer(typeof(T));
+                using (StreamReader rd = new StreamReader(new MemoryStream(System.Convert.FromBase64String(Data64), true)))
+                    return (T)xs.Deserialize(rd);
+            }
+            catch { return default(T); }
+        }
+
+        /// <summary>
+        /// Reads an XML string (Deserialize)
+        /// </summary>
+        /// <param name="MemoryData"></param>
+        public static T ReadXmlStr(string Data)
+        {
+            try
+            {
+                XmlSerializer xs = new XmlSerializer(typeof(T));
+                using (StreamReader rd = new StreamReader(StrToMemoryStream(Data)))
+                    return (T)xs.Deserialize(rd);
+            }
+            catch { return default(T); }
+        }
+
+        /// <summary>
+        /// Reads an XML string (Deserialize)
+        /// </summary>
+        /// <param name="MemoryData"></param>
+        public static T ReadXmlStr64(string Data64)
+        {
+            try
+            {
+                XmlSerializer xs = new XmlSerializer(typeof(T));
+                using (StreamReader rd = new StreamReader(new MemoryStream(System.Convert.FromBase64String(Data64), true)))
+                    return (T)xs.Deserialize(rd);
+            }
+            catch { return default(T); }
+        }
+
+        /// <summary>
+        /// Converts a string into a MemoryStream
+        /// </summary>
+        public MemoryStream StringToMemoryStream(string InputData)
+        {
+            try
+            {
+                return new MemoryStream(System.Text.Encoding.UTF8.GetBytes(InputData), true);
+            }
+            catch
+            {
+                return null;
+            }        
+        }
+
+        /// <summary>
+        /// Converts a string into a MemoryStream
+        /// </summary>
+        public static MemoryStream StrToMemoryStream(string InputData)
+        {
+            try
+            {
+                return new MemoryStream(System.Text.Encoding.UTF8.GetBytes(InputData), true);
+            }
+            catch
+            {
+                return null;
+            }
+        }
+
+        public string ToXmlString()
+        {
+            byte[] bytes = this.WriteXML();
+            return System.Text.Encoding.UTF8.GetString(bytes, 0, bytes.Length);
+        }
+
+        /// <summary>
+        /// Encodes a string into 64bit-based.
+        /// </summary>
+        /// <returns></returns>
+        public string ToXmlString64()
+        {
+            byte[] bytes = this.WriteXML();
+            return System.Convert.ToBase64String(bytes);
+        }
+    }
+}

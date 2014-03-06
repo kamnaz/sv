@@ -1,0 +1,96 @@
+﻿using System;
+using System.Linq;
+using log4net;
+using System.Globalization;
+using log4net.Config;
+using System.IO;
+using System.Diagnostics;
+
+namespace Common
+{
+    public class Logger
+    {
+        private const int SkipFrames = 2;
+
+        #region Datamembers
+
+        private static ILog log = null;
+
+        #endregion
+
+        #region Class Initializer
+
+        public Logger()
+        {
+            log = LogManager.GetLogger(typeof(Logger));
+            log4net.GlobalContext.Properties["host"] = Environment.MachineName;
+        }
+
+        public Logger(FileInfo ConfigFile)
+        {
+            XmlConfigurator.ConfigureAndWatch(ConfigFile);
+
+            log = LogManager.GetLogger(typeof(Logger));
+            log4net.GlobalContext.Properties["host"] = Environment.MachineName;
+        }
+
+        public Logger(string ConfigFile)
+        {
+            FileInfo ConfigFileInfo = new FileInfo(ConfigFile);
+            XmlConfigurator.ConfigureAndWatch(ConfigFileInfo);
+
+            log = LogManager.GetLogger(typeof(Logger));
+            log4net.GlobalContext.Properties["host"] = Environment.MachineName;
+        }
+
+        #endregion
+
+        #region Methods
+
+        private static string WrapMessage(string message)
+        {
+            var stacktrace = new StackTrace(SkipFrames, true);
+            var frame = stacktrace.GetFrame(0);
+            var method = frame.GetMethod();
+            return string.Format("[{0}->{1}]: {2}", method.DeclaringType.Name, method.Name, message);
+        }
+
+        public void EnterMethod(string methodName)
+        {
+            if (log.IsInfoEnabled)
+                log.Info(WrapMessage(string.Format(CultureInfo.InvariantCulture, "Entering Method {0}", methodName)));
+        }
+
+        public void LeaveMethod(string methodName)
+        {
+            if (log.IsInfoEnabled)
+                log.Info(WrapMessage(string.Format(CultureInfo.InvariantCulture, "Leaving Method {0}", methodName)));
+        }
+
+        public void Error(Exception exception)
+        {
+            if (log.IsErrorEnabled)
+                log.Error(WrapMessage(string.Format(CultureInfo.InvariantCulture, "{0}", exception.Message)), exception);
+        }
+
+        public void Error(string message)
+        {
+            if (log.IsErrorEnabled)
+                log.Error(WrapMessage(string.Format(CultureInfo.InvariantCulture, "{0}", message)));
+        }
+
+        public void Warn(string message)
+        {
+            if (log.IsWarnEnabled)
+                log.Warn(WrapMessage(string.Format(CultureInfo.InvariantCulture, "{0}", message)));
+        }
+
+        public void Info(string message)
+        {
+            if (log.IsInfoEnabled)
+                log.Info(WrapMessage(string.Format(CultureInfo.InvariantCulture, "{0}", message)));
+        }
+
+        #endregion        
+    }
+}

@@ -1,0 +1,193 @@
+﻿using System;
+using System.Collections.Generic;
+
+namespace Common
+{
+    public static class SerialNumberGenerator
+    {
+
+        private static string AppendSpecifiedStr(int SegmentCount, int SegmentLength, string SeparatorString, char[] newKey, int DigitMode = 7)
+        {
+            try
+            {
+                int length = SegmentCount * SegmentLength;
+
+                newKey = CountDigits(newKey, length, DigitMode);
+
+                string newKeyStr = "";
+                int k = 0;
+                for (int i = 0; i < length; i++)
+                {
+                    for (k = i; k < SegmentLength + i; k++)
+                        newKeyStr += newKey[k];
+
+                    if (k == length)
+                        break;
+                    else
+                    {
+                        i = k - 1;
+                        newKeyStr += SeparatorString;
+                    }
+                }
+
+                return newKeyStr;
+            }
+            catch (Exception ex)
+            {
+                Exceptions = ex;
+                DigitCount = 0;
+                return null;
+            }
+        }
+
+        private static char[] CountDigits(char[] Keys, int length, int DigitMode = 7)
+        {
+            try
+            {
+                int numberCount = 0;
+                List<int> numbers = new List<int>();
+                for (int i = 0; i < length; i++)
+                {
+                    if (char.IsDigit(Keys[i]))
+                    {
+                        int number = int.Parse(Keys[i].ToString());
+
+                        if (number == 0) // to avoid user's mistake, let's not use 0
+                            number++;
+
+                        numbers.Add(number);
+                        numberCount += number;
+                    }
+                }
+
+                int mod = numberCount % DigitMode;
+
+                if (mod != 0)
+                {
+                    for (int i = 0; i < numbers.Count; i++)
+                    {
+                        if (numbers[i] > DigitMode - 1)
+                            continue;
+                        else if (numbers[i] - 1 > 0) // cannot be negative
+                        {
+                            numbers[i]--;
+                            mod--;
+                            if (mod == 0)
+                                break;
+                        }
+                    }
+                }
+
+                numberCount = 0;
+                int j = 0;
+                for (int i = 0; i < length; i++)
+                {
+                    if (char.IsDigit(Keys[i]))
+                    {
+                        numberCount += numbers[j];
+                        Keys[i] = Convert.ToChar(numbers[j].ToString());
+                        j++;
+                    }
+                }
+
+                mod = numberCount % DigitMode;
+                if (mod != 0)
+                    throw new Exception("Digit count is invalid. Please try again.");
+
+                DigitCount = numberCount;
+
+            }
+            catch (Exception ex)
+            {
+                Exceptions = ex;
+            }
+
+            return Keys;
+
+        }
+
+        /// <summary>
+        /// Generates standard serial key with alphanumeric format
+        /// </summary>
+        /// <param name="SegmentCount"></param>
+        /// <param name="SegmentLength"></param>
+        /// <param name="SeparatorString"></param>
+        /// <returns>returns formatted serial key</returns>
+        public static string GetSerialKeyAlphaNumaric(int SegmentCount = 4, int SegmentLength = 6, string SeparatorString = "-", int DigitMode = 7)
+        {
+            if (SegmentCount == 0)
+                SegmentCount = 4;
+
+            if (SegmentLength == 0)
+                SegmentCount = 6;
+
+            int length = SegmentLength * SegmentCount;
+            if (length > 32)
+                throw new Exception("Your password length is " + SegmentLength + "x" + SegmentCount + "=" + length + " which is greater than the maximum supported length of 32.");
+
+            if (string.IsNullOrEmpty(SeparatorString))
+                SeparatorString = "-";
+
+            // make several tries in case we didn't find a serial number that matched the required conditions
+            int j = 0;
+            SerialNumber = null;
+            while (string.IsNullOrWhiteSpace(SerialNumber) && j < 50)
+            {
+                SerialNumber =
+                 AppendSpecifiedStr(
+                    SegmentCount,
+                    SegmentLength,
+                    SeparatorString,
+                    Guid.NewGuid().ToString("N").Substring(0, length).ToUpper().ToCharArray(), DigitMode);
+
+                j++;
+            }
+
+            SerialNumberTemplate = ShowSerialNumberTemplate(SeparatorString);
+
+            return SerialNumber;
+        }
+
+        private static string ShowSerialNumberTemplate(string SeparatorString)
+        {
+            try
+            {
+                if (string.IsNullOrEmpty(SerialNumber))
+                    return null;
+
+                char[] chars = SerialNumber.ToCharArray();
+
+                string template = "<";
+                foreach (char c in chars)
+                {
+                    if (c.ToString() == SeparatorString)
+                    {
+                        template += '-';
+                        continue;
+                    }
+
+                    if (char.IsDigit(c))
+                        template += '%';
+
+                    if (char.IsLetter(c))
+                        template += '^';
+                }
+
+                return template + ">";
+            }
+            catch (Exception ex)
+            {
+                Exceptions = ex;
+                return string.Empty;
+            }
+        }
+
+        public static int DigitCount { get; set; }
+
+        public static string SerialNumber { get; set; }
+
+        public static string SerialNumberTemplate { get; set; }
+
+        public static Exception Exceptions { get; set; }
+    }
+}

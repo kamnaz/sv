@@ -1,0 +1,75 @@
+﻿using System;
+using System.ComponentModel;
+using System.Linq.Expressions;
+using System.Reflection;
+
+namespace Common
+{
+    [CLSCompliant(true)]
+    public class Observable : INotifyPropertyChanged
+    {
+        public event PropertyChangedEventHandler PropertyChanged;
+
+        protected virtual void OnPropertyChanged(string propertyName)
+        {
+            PropertyChangedEventHandler handler = this.PropertyChanged;
+            if (handler != null)
+            {
+                handler(this, new PropertyChangedEventArgs(propertyName));
+            }
+        }
+
+        protected void OnPropertyChanged(params string[] propertyNames)
+        {
+            foreach (var name in propertyNames)
+            {
+                this.OnPropertyChanged(name);
+            }
+        }
+
+        protected void OnPropertyChanged<T>(Expression<Func<T>> propertyExpresssion)
+        {
+            var propertyName = ExtractPropertyName(propertyExpresssion);
+            this.OnPropertyChanged(propertyName);
+        }
+
+        private string ExtractPropertyName<T>(Expression<Func<T>> propertyExpresssion)
+        {
+            if (propertyExpresssion == null)
+            {
+                throw new ArgumentNullException("propertyExpression");
+            }
+
+            var memberExpression = propertyExpresssion.Body as MemberExpression;
+            if (memberExpression == null)
+            {
+                throw new ArgumentException("The expression is not a member access expression.", "propertyExpression");
+            }
+
+            var property = memberExpression.Member as PropertyInfo;
+            if (property == null)
+            {
+                throw new ArgumentException("The member access expression does not access a property.", "propertyExpression");
+            }
+
+            if (!property.DeclaringType.IsAssignableFrom(this.GetType()))
+            {
+                throw new ArgumentException("The referenced property belongs to a different type.", "propertyExpression");
+            }
+
+            var getMethod = property.GetGetMethod(true);
+            if (getMethod == null)
+            {
+                // this shouldn't happen - the expression would reject the property before reaching this far
+                throw new ArgumentException("The referenced property does not have a get method.", "propertyExpression");
+            }
+
+            if (getMethod.IsStatic)
+            {
+                throw new ArgumentException("The referenced property is a static property.", "propertyExpression");
+            }
+
+            return memberExpression.Member.Name;
+        }
+    }
+}

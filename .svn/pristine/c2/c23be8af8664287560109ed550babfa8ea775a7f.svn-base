@@ -1,0 +1,261 @@
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.IO;
+using System.Text.RegularExpressions;
+using System.Runtime.Serialization;
+
+namespace Common
+{
+    public static class Utils
+    {
+        /// <summary>
+        /// Cleans the string by removing search engine noise words and white spaces.
+        /// </summary>
+        /// <param name="inputString">The input string.</param>
+        /// <returns></returns>
+        public static string CleanString(string inputString)
+        {
+            if (string.IsNullOrWhiteSpace(inputString))
+                return inputString;
+
+            string noiseRegex = @"\b(?:about|after|all|also|an|and|another|any|are|as|at|be|because|been|before|being|between|both|but|by|came|can|come|could|did|do|each|for|from|get|got|has|had|he|have|her|here|him|himself|his|how|if|in|into|is|it|like|many|me|might|more|most|much|must|my|never|now|of|on|only|or|other|our|out|over|said|same|see|should|since|some|such|take|than|that|the|their|them|then|there|these|they|this|those|to|too|under|up|very|was|way|we|well|were|what|where|which|while|who|with|would|you|your|a|b|c|d|e|f|g|h|i|j|k|l|m|n|o|p|q|r|s|t|u|v|w|x|y|z)\b";
+
+            // remove all numbers
+            string tmp = Regex.Replace(inputString.Trim(), @"\d\w+", " ", RegexOptions.IgnoreCase | RegexOptions.Multiline).Trim();
+
+            // remove noise strings    
+            tmp = Regex.Replace(tmp, noiseRegex, " ", RegexOptions.IgnoreCase | RegexOptions.Multiline).Trim();
+
+            // remove duplicate words
+            tmp = RemoveDuplicateWords(tmp);
+
+            // remove all spaces/newlines
+            tmp = Regex.Replace(tmp, @"\W+", " ", RegexOptions.IgnoreCase | RegexOptions.Multiline).Trim();
+
+            // find all other illegal chars
+            string output = string.Empty;
+            for (int jj = 0; jj < tmp.Length; jj++)
+            {
+                char ch = tmp[jj];
+                if (((int)(byte)ch) >= 32 & ((int)(byte)ch) <= 128)
+                {
+                    output += ch;
+                }
+            }
+
+            return output;
+        }
+
+        /// <summary>
+        /// Merges all spaces in a string.
+        /// </summary>
+        /// <param name="inputString">The input string.</param>
+        /// <returns></returns>
+        public static string MergeSpaces(string inputString)
+        {
+            if (string.IsNullOrWhiteSpace(inputString))
+                return inputString;
+
+            return Regex.Replace(inputString, @"\s+", " ");
+        }
+
+        /// <summary>
+        /// Removes the duplicates.
+        /// </summary>
+        /// <param name="inputString">The input string.</param>
+        /// <returns></returns>
+        public static string RemoveDuplicateWords(string inputString)
+        {
+            if (string.IsNullOrWhiteSpace(inputString))
+                return inputString;
+
+            var words = new HashSet<string>();
+            return Regex.Replace(inputString, "\\w+", m =>
+                     words.Add(m.Value.ToUpperInvariant())
+                         ? m.Value
+                         : String.Empty);
+        }
+
+        /// <summary>
+        /// Returns true if at least one of the keywords is found in the input string. The input string is split first.
+        /// </summary>
+        /// <param name="InputString">The input string.</param>
+        /// <param name="Keywords">The keywords.</param>
+        /// <returns>the matching keyword if found a match, otherwise returns null</returns>
+        public static string StringContains(string InputString, string[] Keywords)
+        {
+            string[] input = InputString.Split(new char[] { '-', '_', ' ' }, StringSplitOptions.RemoveEmptyEntries);
+
+            foreach (var item in input)
+                foreach (var key in Keywords)
+                    if (string.Compare(item, key, true) == 0)
+                        return key;
+
+            return null;
+        }        
+
+        /// <summary>
+        /// Encodes a string into 64bit-based.
+        /// </summary>
+        /// <param name="toEncode">To encode.</param>
+        /// <returns></returns>
+        static public string EncodeTo64(string toEncode)
+        {
+            byte[] toEncodeAsBytes = System.Text.ASCIIEncoding.ASCII.GetBytes(toEncode);
+            string returnValue = System.Convert.ToBase64String(toEncodeAsBytes);
+            return returnValue;
+        }
+
+        /// <summary>
+        /// Decodes a 64bit-based string.
+        /// </summary>
+        /// <param name="encodedData">The encoded data.</param>
+        /// <returns></returns>
+        static public string DecodeFrom64(string encodedData)
+        {
+            byte[] encodedDataAsBytes = System.Convert.FromBase64String(encodedData);
+            string returnValue = System.Text.ASCIIEncoding.ASCII.GetString(encodedDataAsBytes);
+            return returnValue;
+        }
+
+        /// <summary>
+        /// Titles the case.
+        /// </summary>
+        /// <param name="InputString">The input string.</param>
+        /// <returns></returns>
+        public static string TitleCase(string InputString)
+        {
+            if (string.IsNullOrWhiteSpace(InputString))
+                return "";
+
+            return System.Text.RegularExpressions.Regex.Replace(InputString, @"\w+", (m) =>
+            {
+                string tmp = m.Value;
+                return char.ToUpper(tmp[0]) + tmp.Substring(1, tmp.Length - 1).ToLower();
+            });
+        }
+
+        /// <summary>
+        /// Converts a string into a MemoryStream
+        /// </summary>
+        /// <param name="inputData">The input data.</param>
+        /// <returns></returns>
+        public static MemoryStream StringToMemoryStream(string inputData)
+        {
+            try
+            {
+                return new MemoryStream(System.Text.Encoding.UTF8.GetBytes(inputData), true);
+            }
+            catch
+            {
+                return null;
+            }
+        }
+
+        /// <summary>
+        /// Converts a MemoryStream into a string
+        /// </summary>
+        /// <param name="inputData">The input data.</param>
+        /// <returns></returns>
+        public static string MemoryStreamToString(MemoryStream inputData)
+        {
+            try
+            {
+                string data = "";
+                using (StreamReader sr = new StreamReader(inputData))
+                    data = sr.ReadToEnd().TrimEnd('\0');
+
+                return data;
+            }
+            catch
+            {
+                return null;
+            }
+        }
+
+        /// <summary>
+        /// Converts a MemoryStream into a string
+        /// </summary>
+        /// <param name="inputData">The input data.</param>
+        /// <returns></returns>
+        public static string StreamToBase64String(Stream inputData)
+        {
+            try
+            {
+                string data = "";
+                using (StreamReader sr = new StreamReader(inputData))
+                    data = sr.ReadToEnd().TrimEnd('\0');
+
+                return data;
+            }
+            catch
+            {
+                return null;
+            }
+        }        
+
+        /// <summary>
+        /// Gets the NetBIOS of a computer.
+        /// </summary>
+        /// <param name="Name">The name.</param>
+        /// <returns></returns>
+        public static string NetBiosName(string Name)
+        {
+            if (string.IsNullOrWhiteSpace(Name))
+                return string.Empty;
+
+            return Name.
+                   Replace(" ", "").
+                   Replace("_", "").
+                   Replace("-", "").
+                   Replace("\\", "").
+                   Replace(":", "").
+                   Replace(".", "").
+                   Replace(",", "").
+                   Trim().
+                   Substring(0, Math.Min(15, Name.Length));
+        }
+
+        /// <summary>
+        /// Deep copy a collection.
+        /// </summary>
+        /// <param name="oSource">The o source.</param>
+        /// <returns></returns>
+        public static T DeepCopy<T>(this T oSource)
+        {
+            T oClone;
+
+            DataContractSerializer dcs = new DataContractSerializer(typeof(T));
+
+            using (MemoryStream ms = new MemoryStream())
+            {
+                dcs.WriteObject(ms, oSource);
+                ms.Position = 0;
+                oClone = (T)dcs.ReadObject(ms);
+            }
+
+            return oClone;
+        }
+
+        /// <summary>
+        /// Arrays to string.
+        /// </summary>
+        /// <param name="collection">The collection.</param>
+        /// <returns></returns>
+        public static string ArrayToString<T>(IEnumerable<T> collection)
+        {
+            string stringCol = string.Empty;
+
+            if (collection != null)
+                foreach (T item in collection)
+                {
+                    string s = item.ToString();
+                    if (!string.IsNullOrWhiteSpace(s))
+                        stringCol += s + "|";
+                }
+
+            return stringCol.TrimEnd('|');
+        }
+    }
+}

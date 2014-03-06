@@ -1,0 +1,116 @@
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+using System.Windows;
+using System.Windows.Controls;
+using System.Windows.Data;
+using System.Windows.Documents;
+using System.Windows.Input;
+using System.Windows.Media;
+using System.Windows.Media.Imaging;
+using System.Windows.Shapes;
+
+namespace SimuVault
+{
+    /// <summary>
+    /// Interaction logic for PasswordDialog.xaml
+    /// </summary>
+    public partial class PasswordDialog : Window
+    {
+        public static bool? ShowPasswordDialog(string password, bool OpeningFile = false)
+        {
+            PasswordDialog dialog = new PasswordDialog(password, OpeningFile);
+
+            return dialog.ShowDialog();
+        }
+
+        internal Func<string> PasswordAccessor { get; set; }
+
+        public string Password
+        {
+            get
+            {
+                return (this.PasswordAccessor == null) ? string.Empty : this.PasswordAccessor();
+            }
+            set
+            {
+                if (null != value)
+                    this.PasswordAccessor = () => value;
+            }
+        }
+
+        private bool OpeningFile = false;
+
+        public PasswordDialog() : this(string.Empty) { }
+        public PasswordDialog(string password, bool OpeningFile = false)
+        {
+            Password = password;
+            InitializeComponent();
+
+            this.OpeningFile = OpeningFile;
+            if (this.OpeningFile)
+            {
+                this.passwordLabel.Text = "Password:";
+                this.passwordBox.Visibility = Visibility.Collapsed;
+                this.passwordConfirmTextBlock.Visibility = Visibility.Collapsed;
+                this.Height = 140.0;
+            }
+
+            this.passwordBox2.PasswordChanged += passwordBox2_PasswordChanged;
+            if (!string.IsNullOrEmpty(password))
+                passwordBox.Password = password;
+
+            this.ContentRendered += (s, e) =>
+                {
+                    this.passwordBox.Focus();
+                };
+        }
+
+        private void passwordBox2_PasswordChanged(object sender, RoutedEventArgs e)
+        {
+            if (this.OpeningFile)
+                btnOK.IsEnabled = !string.IsNullOrWhiteSpace(passwordBox2.Password);
+            else
+            {
+                btnOK.IsEnabled = !string.IsNullOrWhiteSpace(passwordBox.Password) && passwordBox.Password.Length >= 12 && passwordBox.Password.Equals(passwordBox2.Password);
+            }
+
+            Password = passwordBox2.Password;
+        }
+
+        private void btnOK_Click_1(object sender, RoutedEventArgs e)
+        {
+            OkCommand();
+        }
+        private void btnCancel_Click_1(object sender, RoutedEventArgs e)
+        {
+            this.DialogResult = false;
+            this.Close();
+        }
+        private void PasswordBox_KeyUp_1(object sender, KeyEventArgs e)
+        {
+            if (e.Key == Key.Enter && !string.IsNullOrWhiteSpace(passwordBox.Password) && passwordBox.Password.Equals(passwordBox2.Password))
+                OkCommand();
+        }
+
+        private void OkCommand()
+        {
+            if (this.OpeningFile)
+            {
+                if (!string.IsNullOrWhiteSpace(passwordBox2.Password))
+                {
+                    this.DialogResult = true;
+                    this.Close();
+                }
+            }
+            else
+                if (!string.IsNullOrWhiteSpace(passwordBox2.Password) && passwordBox.Password.Equals(passwordBox2.Password))
+                {
+                    this.DialogResult = true;
+                    this.Close();
+                }
+        }
+    }
+}

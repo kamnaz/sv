@@ -1,0 +1,33 @@
+﻿<?xml version='1.0' encoding='utf-8'?>
+<SettingsFile xmlns="http://schemas.microsoft.com/VisualStudio/2004/01/settings" CurrentProfile="(Default)" GeneratedClassNamespace="SimuVault.Properties" GeneratedClassName="Settings">
+  <Profiles />
+  <Settings>
+    <Setting Name="LastSaveFolder" Type="System.String" Scope="User">
+      <Value Profile="(Default)" />
+    </Setting>
+    <Setting Name="LastWidth" Type="System.Int32" Scope="User">
+      <Value Profile="(Default)">640</Value>
+    </Setting>
+    <Setting Name="LastHeight" Type="System.Int32" Scope="User">
+      <Value Profile="(Default)">480</Value>
+    </Setting>
+    <Setting Name="LastLeft" Type="System.Int32" Scope="User">
+      <Value Profile="(Default)">100</Value>
+    </Setting>
+    <Setting Name="LastTop" Type="System.Int32" Scope="User">
+      <Value Profile="(Default)">100</Value>
+    </Setting>
+    <Setting Name="p1" Type="System.String" Scope="Application">
+      <Value Profile="(Default)">B4DE2E-68E43A4-0FCC6-D6DB37C-B78F7</Value>
+    </Setting>
+    <Setting Name="p2" Type="System.String" Scope="Application">
+      <Value Profile="(Default)">SimuCloudToolsTemporaryRequest</Value>
+    </Setting>
+    <Setting Name="p3" Type="System.String" Scope="Application">
+      <Value Profile="(Default)">88FD2-CFECDEB-30988B2F5-B8B5B23A1F-2B02CC419-05FC867-ABB3EE965-8D69-7AF80AF-5F-1B165D|E7B2-03A867CA3-8B85DB8A8E-6DCC-8D1FD2921BC-806F61-D8EF0FA-E070FE8-5DF54</Value>
+    </Setting>
+    <Setting Name="BaseUrl" Type="System.String" Scope="User">
+      <Value Profile="(Default)">https://cloud.simutechgroup.com/simutech</Value>
+    </Setting>
+  </Settings>
+</SettingsFile>

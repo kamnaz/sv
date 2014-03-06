@@ -1,0 +1,43 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<configuration>
+    <configSections>
+        <sectionGroup name="userSettings" type="System.Configuration.UserSettingsGroup, System, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" >
+            <section name="SimuVault.Properties.Settings" type="System.Configuration.ClientSettingsSection, System, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" allowExeDefinition="MachineToLocalUser" requirePermission="false" />
+        </sectionGroup>
+        <sectionGroup name="applicationSettings" type="System.Configuration.ApplicationSettingsGroup, System, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" >
+            <section name="SimuVault.Properties.Settings" type="System.Configuration.ClientSettingsSection, System, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" requirePermission="false" />
+        </sectionGroup>
+    </configSections>
+    <startup> 
+        <supportedRuntime version="v4.0" sku=".NETFramework,Version=v4.5" />
+    </startup>
+    <userSettings>
+        <SimuVault.Properties.Settings>
+            <setting name="LastSaveFolder" serializeAs="String">
+                <value />
+            </setting>           
+            <setting name="LastLeft" serializeAs="String">
+                <value>100</value>
+            </setting>
+            <setting name="LastTop" serializeAs="String">
+                <value>100</value>
+            </setting>
+            <setting name="BaseUrl" serializeAs="String">
+                <value>https://cloud.simutechgroup.com/simutech</value>
+            </setting>
+        </SimuVault.Properties.Settings>
+    </userSettings>
+    <applicationSettings>
+        <SimuVault.Properties.Settings>
+            <setting name="p1" serializeAs="String">
+                <value>B4DE2E-68E43A4-0FCC6-D6DB37C-B78F7</value>
+            </setting>
+            <setting name="p2" serializeAs="String">
+                <value>SimuCloudToolsTemporaryRequest</value>
+            </setting>
+            <setting name="p3" serializeAs="String">
+                <value>88FD2-CFECDEB-30988B2F5-B8B5B23A1F-2B02CC419-05FC867-ABB3EE965-8D69-7AF80AF-5F-1B165D|E7B2-03A867CA3-8B85DB8A8E-6DCC-8D1FD2921BC-806F61-D8EF0FA-E070FE8-5DF54</value>
+            </setting>
+        </SimuVault.Properties.Settings>
+    </applicationSettings>
+</configuration>

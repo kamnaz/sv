@@ -1,0 +1,600 @@
+﻿using Microsoft.Win32;
+using System;
+using System.Collections.Generic;
+using System.Collections.ObjectModel;
+using System.IO;
+using System.Linq;
+using System.Reflection;
+using System.Runtime.Serialization;
+using System.Windows;
+using System.Xml.Serialization;
+using System.Text;
+
+namespace SimuVault.ViewModels
+{
+    [Serializable]
+    [DataContract]
+    public class VaultVM : VMBase
+    {
+        private const string pExtension = "j!Yx$x%^";
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="VaultVM"/> class.
+        /// </summary>
+        public VaultVM()
+        {
+            Items = new ObservableCollection<KeyPairItem>();
+            Groups = new ObservableCollection<Group>();
+        }
+
+        #region Properties
+        private ObservableCollection<KeyPairItem> _items;
+        /// <summary>
+        /// Gets or sets the items.
+        /// </summary>
+        /// <value>
+        /// The items.
+        /// </value>
+        [DataMember]
+        [XmlArray]
+        public ObservableCollection<KeyPairItem> Items
+        {
+            get { return _items; }
+            set
+            {
+                _items = value;
+                NotifyPropertyChanged("Items");
+                NotifyPropertyChanged("FilteredItems");
+            }
+        }
+        /// <summary>
+        /// Gets the filtered items.
+        /// </summary>
+        /// <value>
+        /// The filtered items.
+        /// </value>
+        public IEnumerable<KeyPairItem> FilteredItems
+        {
+            get
+            {
+                IEnumerable<KeyPairItem> filteredItems = null;
+                if (SelectedGroup != null)
+                {
+                    filteredItems = from x in _items
+                                    where x.GroupName.ToLower().Equals(SelectedGroup.Title.ToLower())
+                                    orderby x.Title
+                                    select x;
+
+                    if (!string.IsNullOrWhiteSpace(_searchText))
+                        filteredItems = from x in filteredItems
+                                        where x.Title.ToLower().Contains(_searchText.ToLower())
+                                        orderby x.Title
+                                        select x;
+                }
+                return filteredItems;
+            }
+        }
+
+        private ObservableCollection<Group> _groups;
+        /// <summary>
+        /// Gets or sets the groups.
+        /// </summary>
+        /// <value>
+        /// The groups.
+        /// </value>
+        [DataMember]
+        [XmlArray]
+        public ObservableCollection<Group> Groups
+        {
+            get { return _groups; }
+            set
+            {
+                _groups = value;
+                NotifyPropertyChanged("Groups");
+                //NotifyPropertyChanged("FilteredGroups");
+            }
+        }
+        /// <summary>
+        /// Gets the filtered groups.
+        /// </summary>
+        /// <value>
+        /// The filtered groups.
+        /// </value>
+        //public IEnumerable<Group> FilteredGroups
+        //{
+        //    get
+        //    {
+        //        IEnumerable<Group> filteredItems;
+        //        if (!string.IsNullOrEmpty(_searchText))
+        //            filteredItems = from x in _groups
+        //                            where x.Title.ToLower().Contains(_searchText.ToLower())
+        //                            orderby x.Title
+        //                            select x;
+        //        else
+        //            filteredItems = from x in _groups
+        //                            orderby x.Title
+        //                            select x;
+        //        return filteredItems;
+        //    }
+        //}
+
+        [NonSerialized]
+        private string _searchText;
+        /// <summary>
+        /// Gets or sets the search text.
+        /// </summary>
+        /// <value>
+        /// The search text.
+        /// </value>
+        [IgnoreDataMember, XmlIgnore]
+        public string SearchText
+        {
+            get { return _searchText; }
+            set
+            {
+                _searchText = value;
+                NotifyPropertyChanged("SearchText");
+                NotifyPropertyChanged("FilteredItems");
+            }
+        }
+
+        private Group _selectedGroup;
+        /// <summary>
+        /// Gets or sets the selected group.
+        /// </summary>
+        /// <value>
+        /// The selected group.
+        /// </value>
+        [IgnoreDataMember, XmlIgnore]
+        public Group SelectedGroup
+        {
+            get { return _selectedGroup; }
+            set
+            {
+                _selectedGroup = value;
+                NotifyPropertyChanged("SelectedGroup");
+                NotifyPropertyChanged("IsAnyGroupSelected");
+                NotifyPropertyChanged("FilteredItems");
+            }
+        }
+
+        /// <summary>
+        /// Gets a value indicating whether [is any group selected].
+        /// </summary>
+        /// <value>
+        ///   <c>true</c> if [is any group selected]; otherwise, <c>false</c>.
+        /// </value>
+        public bool IsAnyGroupSelected
+        {
+            get { return _selectedGroup != null; }
+        }
+
+        private KeyPairItem _selectedItem;
+        /// <summary>
+        /// Gets or sets the selected item.
+        /// </summary>
+        /// <value>
+        /// The selected item.
+        /// </value>
+        [IgnoreDataMember, XmlIgnore]
+        public KeyPairItem SelectedItem
+        {
+            get { return _selectedItem; }
+            set
+            {
+                _selectedItem = value;
+                NotifyPropertyChanged("SelectedItem");
+                NotifyPropertyChanged("IsAnyItemSelected");
+            }
+        }
+
+        /// <summary>
+        /// Gets a value indicating whether [is any item selected].
+        /// </summary>
+        /// <value>
+        ///   <c>true</c> if [is any item selected]; otherwise, <c>false</c>.
+        /// </value>
+        public bool IsAnyItemSelected
+        {
+            get { return _selectedItem != null; }
+        }
+
+        private const string _defaultFileName = "NewWault";
+        private string _fileName = _defaultFileName;
+        [DataMember]
+        [XmlAttribute]
+        public string FileName
+        {
+            get { return _fileName; }
+            set
+            {
+                _fileName = value;
+                NotifyPropertyChanged("FileName");
+                NotifyPropertyChanged("Title");
+            }
+        }
+        /// <summary>
+        /// Gets the title.
+        /// </summary>
+        /// <value>
+        /// The title.
+        /// </value>
+        public string Title
+        {
+            get
+            {
+                return "SimuVault";
+            }
+        }
+
+        private string _fullPath;       
+
+        #endregion
+
+        #region Methods
+        /// <summary>
+        /// Passwords the and save.
+        /// </summary>
+        /// <returns></returns>
+        private bool PasswordAndSave()
+        {
+            PasswordDialog dialog = new PasswordDialog();
+            if (dialog.ShowDialog().Value)
+            {
+                if (!string.IsNullOrWhiteSpace(dialog.Password))
+                {
+                    AES.SaltAccessor = () => dialog.Password + pExtension;
+                    return SaveToFile(_fullPath, dialog.Password);
+                }
+                else
+                    return false;
+            }
+            else
+                return false;
+        }
+
+        /// <summary>
+        /// Saves to file.
+        /// </summary>
+        /// <param name="fileName">Name of the file.</param>
+        /// <param name="password">The password.</param>
+        /// <returns></returns>
+        private bool SaveToFile(string fileName, string password)
+        {
+            try
+            {
+                File.WriteAllBytes(fileName, AES.Encrypt(SerializeToXML(), password));
+                ResetChanges();
+                return true;
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(ex.Message, "Saving File Failed", MessageBoxButton.OK, MessageBoxImage.Error);
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// Froms the file.
+        /// </summary>
+        /// <param name="fileName">Name of the file.</param>
+        /// <param name="password">The password.</param>
+        /// <returns></returns>
+        private static VaultVM FromFile(string fileName, string password)
+        {
+            try
+            {
+                return DeSerializeFromXML<VaultVM>(AES.Decrypt(File.ReadAllBytes(fileName), password));
+            }
+            catch
+            {
+                MessageBox.Show("Corrupt file or wrong password.", "Load Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                return null;
+            }
+        }
+        /// <summary>
+        /// Removes the group.
+        /// </summary>
+        /// <param name="item">The item.</param>
+        private void RemoveGroup(Group item)
+        {
+            
+            item.Changed -= group_Changed;
+            this.Groups.Remove(item);
+            NotifyPropertyChanged("FilteredGroups");
+            IsChanged = true;
+        }
+        /// <summary>
+        /// Adds the group.
+        /// </summary>
+        /// <param name="item">The item.</param>
+        private void AddGroup(Group item)
+        {
+            item.Changed += group_Changed;
+            this.Groups.Add(item);
+            NotifyPropertyChanged("FilteredGroups");
+            SelectedGroup = item;
+            IsChanged = true;
+        }
+
+        /// <summary>
+        /// Removes the item.
+        /// </summary>
+        /// <param name="item">The item.</param>
+        private void RemoveItem(KeyPairItem item)
+        {
+            item.Changed -= item_Changed;
+            this.Items.Remove(item);
+            NotifyPropertyChanged("FilteredItems");
+            IsChanged = true;
+        }
+        /// <summary>
+        /// Adds the item.
+        /// </summary>
+        /// <param name="item">The item.</param>
+        private void AddItem(KeyPairItem item)
+        {
+            item.Changed += item_Changed;
+            this.Items.Add(item);
+            NotifyPropertyChanged("FilteredItems");
+            SelectedItem = item;
+            IsChanged = true;
+        }
+        /// <summary>
+        /// Handles the Changed event of the item control.
+        /// </summary>
+        /// <param name="sender">The source of the event.</param>
+        /// <param name="e">The <see cref="EventArgs"/> instance containing the event data.</param>
+        private void item_Changed(object sender, EventArgs e)
+        {
+            this.IsChanged = this.IsChanged || (sender as KeyPairItem).IsChanged;
+        }
+
+        private void group_Changed(object sender, EventArgs e)
+        {
+            this.IsChanged = this.IsChanged || (sender as Group).IsChanged;
+        }
+
+        /// <summary>
+        /// Resets the changes.
+        /// </summary>
+        internal void ResetChanges()
+        {
+            foreach (KeyPairItem item in Items)
+                item.IsChanged = false;
+
+
+            foreach (Group item in Groups)
+                item.IsChanged = false;
+
+            this.IsChanged = false;
+        }
+
+        /// <summary>
+        /// Binds the item events.
+        /// </summary>
+        private void BindItemEvents()
+        {
+            foreach (KeyPairItem item in _items)
+                item.Changed += item_Changed;
+
+            foreach (Group item in Groups)
+                item.Changed += group_Changed;
+        }
+        #endregion
+
+        #region Commands
+        /// <summary>
+        /// Closes the command.
+        /// </summary>
+        /// <returns></returns>
+        internal bool CloseCommand()
+        {
+            if (IsChanged)
+            {
+                switch (MessageBox.Show("Do you want to save changes and exit?", "Close File", MessageBoxButton.YesNoCancel,  MessageBoxImage.Question, MessageBoxResult.Cancel))
+                {
+                    case MessageBoxResult.Yes:
+                        return SaveCommand();
+                    case MessageBoxResult.No:
+                        return true;
+                    case MessageBoxResult.Cancel:
+                    default:
+                        return false;
+                }
+            }
+            else
+                return true;
+        }
+
+        /// <summary>
+        /// Saves the command.
+        /// </summary>
+        /// <returns></returns>
+        internal bool SaveCommand()
+        {
+            if (_fileName == _defaultFileName)
+                return SaveAsCommand();
+            else
+                return PasswordAndSave();
+        }
+
+        /// <summary>
+        /// Saves as command.
+        /// </summary>
+        /// <returns></returns>
+        internal bool SaveAsCommand()
+        {
+            SaveFileDialog dialog = new SaveFileDialog();
+            dialog.InitialDirectory = SimuVault.Properties.Settings.Default.LastSaveFolder;
+            dialog.DefaultExt = "vlt";
+            dialog.Filter = "Vault files (*.vlt)|*.vlt|All files (*.*)|*.*";
+            if (dialog.ShowDialog().Value)
+            {
+                SimuVault.Properties.Settings.Default.LastSaveFolder = dialog.InitialDirectory;
+                SimuVault.Properties.Settings.Default.Save();
+                _fullPath = dialog.FileName;
+                FileName = dialog.SafeFileName;
+                return PasswordAndSave();
+            }
+            else
+                return false;
+        }
+
+        /// <summary>
+        /// Opens a vault file directly.
+        /// </summary>
+        /// <param name="VaultFile">The vault file.</param>
+        /// <returns></returns>
+        internal static VaultVM OpenCommandDirect(string FullName)
+        {
+            FileInfo VaultFile = new FileInfo(FullName);
+
+            if (!VaultFile.Exists)
+                return null;
+
+            for (int i = 0; i < 3; i++)
+            {
+                PasswordDialog dialog1 = new PasswordDialog("", true);
+                dialog1.Title = "Enter Password (try " + (i + 1) + " out of 3)";
+                if (dialog1.ShowDialog().Value)
+                {
+                    if (!string.IsNullOrWhiteSpace(dialog1.Password))
+                    {
+                        AES.SaltAccessor = () => dialog1.Password + pExtension;
+
+                        VaultVM vault = FromFile(VaultFile.FullName, dialog1.Password);
+
+                        if (vault != null)
+                        {
+                            SimuVault.Properties.Settings.Default.LastSaveFolder = VaultFile.DirectoryName;
+                            SimuVault.Properties.Settings.Default.Save();
+
+                            vault._fullPath = VaultFile.FullName;
+                            vault.FileName = VaultFile.Name;
+                            vault.BindItemEvents();
+                            vault.ResetChanges();
+
+                            return vault;
+                        }
+                    }
+                }
+                else
+                    return null;
+                
+            }
+
+            return null;
+
+            /*
+             PasswordDialog dialog1 = new PasswordDialog("", true);
+                if (dialog1.ShowDialog().Value)
+                {
+                    if (!string.IsNullOrWhiteSpace(dialog1.Password))
+                    {
+                        AES.SaltAccessor = () => dialog1.Password + pExtension;
+
+                        VaultVM vault = FromFile(VaultFile.FullName, dialog1.Password);
+
+                        if (vault != null)
+                        {
+                            SimuVault.Properties.Settings.Default.LastSaveFolder = VaultFile.DirectoryName;
+                            SimuVault.Properties.Settings.Default.Save();
+
+                            vault._fullPath = VaultFile.FullName;
+                            vault.FileName = VaultFile.Name;
+                            vault.BindItemEvents();
+                            vault.ResetChanges();
+                        }
+
+                        return vault;
+                    }
+                    else
+                        return null;
+                }
+                else
+                    return null;
+             
+             
+             */
+
+
+        }
+
+        /// <summary>
+        ///  Opens a vault file after user input.
+        /// </summary>
+        /// <returns></returns>
+        internal static VaultVM OpenCommand()
+        {
+            OpenFileDialog dialog = new OpenFileDialog();
+            dialog.InitialDirectory = SimuVault.Properties.Settings.Default.LastSaveFolder;
+            dialog.DefaultExt = "vlt";
+            dialog.Filter = "Vault files (*.vlt)|*.vlt|All files (*.*)|*.*";
+            if (dialog.ShowDialog().Value)
+            {
+                if (dialog.CheckFileExists)
+                    return OpenCommandDirect(dialog.FileName);
+                else
+                    return null;
+            }
+            else
+                return null;
+        }
+
+        /// <summary>
+        /// Adds a KeyPairItem.
+        /// </summary>
+        /// <param name="ItemTitle">The item title.</param>
+        internal void AddKeyPairCommand(string GroupTitle, string itemTitle = null)
+        {
+            if (string.IsNullOrWhiteSpace(itemTitle))
+                AddItem(new KeyPairItem(Items.Count, GroupTitle, "New Item", ""));
+            else
+                AddItem(new KeyPairItem(Items.Count, GroupTitle, itemTitle, ""));
+        }
+
+        /// <summary>
+        /// Deletes a KeyPairItem.
+        /// </summary>
+        internal void DeleteKeyPairCommand()
+        {
+            if (SelectedItem != null)
+                if (MessageBox.Show("Do you want to delete selected key?", "Delete Key", MessageBoxButton.YesNo, MessageBoxImage.Question) == MessageBoxResult.Yes )
+                {
+                    RemoveItem(SelectedItem);
+                    if (Items != null && Items.Count > 0)
+                        SelectedItem = Items[0];
+                }
+        }
+
+        /// <summary>
+        /// Adds a group.
+        /// </summary>
+        /// <param name="ItemTitle">The item title.</param>
+        internal void AddGroupCommand(string ItemTitle = null)
+        {
+            if (string.IsNullOrWhiteSpace(ItemTitle))
+                AddGroup(new Group(Groups.Count, "New Group", ""));
+            else
+                AddGroup(new Group(Groups.Count, ItemTitle, ""));
+        }
+
+        /// <summary>
+        /// Deletes a group.
+        /// </summary>
+        internal void DeleteGroupCommand()
+        {
+            if (SelectedGroup != null)
+            {
+                if (MessageBox.Show("Do you want to delete selected group?", "Delete Group", MessageBoxButton.YesNo, MessageBoxImage.Question) == MessageBoxResult.Yes)
+                {
+                    RemoveGroup(SelectedGroup);
+                    if (Groups != null && Groups.Count > 0)
+                        SelectedGroup = Groups[0];
+                }
+            }
+        }
+        #endregion
+    }
+}

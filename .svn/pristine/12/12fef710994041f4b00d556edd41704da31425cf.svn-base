@@ -1,0 +1,123 @@
+﻿using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using System.Security.Cryptography;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace SimuVault
+{
+    public sealed class AES
+    {
+        public static byte[] Encrypt(byte[] inputData, string sharedSecret)
+        {
+            if (string.IsNullOrEmpty(sharedSecret))
+                throw new ArgumentNullException("sharedSecret");
+
+            byte[] outputData = null;
+
+            try
+            {
+                Rfc2898DeriveBytes key = new Rfc2898DeriveBytes(sharedSecret, Encoding.UTF8.GetBytes(AES.Salt));
+                key.IterationCount = 1000;
+
+                // 256bit encryption
+                AesManaged aesAlg = new AesManaged();
+                aesAlg.Key = key.GetBytes(aesAlg.KeySize / 8);
+                aesAlg.IV = key.GetBytes(aesAlg.BlockSize / 8);
+
+                ICryptoTransform encryptor = aesAlg.CreateEncryptor(aesAlg.Key, aesAlg.IV);
+                using (MemoryStream msEncrypt = new MemoryStream())
+                {
+                    using (CryptoStream csEncrypt = new CryptoStream(msEncrypt, encryptor, CryptoStreamMode.Write))
+                    {
+                        using (MemoryStream inputDataStream = new MemoryStream(inputData))
+                            inputDataStream.CopyTo(csEncrypt);
+                    }
+                    outputData = msEncrypt.ToArray();
+                }
+            }
+            finally
+            {
+            }
+
+            return outputData;
+        }
+
+        public static byte[] Decrypt(byte[] cipherText, string sharedSecret)
+        {
+            if (string.IsNullOrEmpty(sharedSecret))
+                throw new ArgumentNullException("sharedSecret");
+
+            try
+            {
+                Rfc2898DeriveBytes key = new Rfc2898DeriveBytes(sharedSecret, Encoding.UTF8.GetBytes(AES.Salt));
+
+                // 256bit decryption
+                AesManaged aesAlg = new AesManaged();
+                aesAlg.Key = key.GetBytes(aesAlg.KeySize / 8);
+                aesAlg.IV = key.GetBytes(aesAlg.BlockSize / 8);
+
+                ICryptoTransform decryptor = aesAlg.CreateDecryptor(aesAlg.Key, aesAlg.IV);
+                using (MemoryStream msDecrypt = new MemoryStream(cipherText))
+                {
+                    using (CryptoStream csDecrypt = new CryptoStream(msDecrypt, decryptor, CryptoStreamMode.Read))
+                    {                       
+
+                        using (MemoryStream outputMemoryStream = new MemoryStream())
+                        {
+                            csDecrypt.CopyTo(outputMemoryStream);
+                            return outputMemoryStream.ToArray();
+                        }
+                    }
+                }
+            }
+            finally
+            {
+            }
+        }
+
+        #region Properties
+        /// <summary>
+        /// Gets or sets a function that returns the Salt.
+        /// </summary>
+        public static Func<string> SaltAccessor { get; set; }
+
+        /// <summary>
+        /// Sets the Salt.
+        /// </summary>
+        public static string Salt
+        {
+            private get
+            {
+                return (SaltAccessor == null) ? string.Empty : SaltAccessor();
+            }
+            set
+            {
+                SaltAccessor = () => value;
+            }
+        }
+
+        /// <summary>
+        /// Gets or sets a function that returns the Password.
+        /// </summary>
+        public static Func<string> PasswordAccessor { get; set; }
+
+        /// <summary>
+        /// Sets the Password.
+        /// </summary>
+        public static string Password
+        {
+            private get
+            {
+                return (PasswordAccessor == null) ? string.Empty : PasswordAccessor();
+            }
+            set
+            {
+                PasswordAccessor = () => value;
+            }
+        }
+        #endregion
+    }
+}

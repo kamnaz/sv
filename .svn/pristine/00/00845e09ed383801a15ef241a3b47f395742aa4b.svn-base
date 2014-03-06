@@ -1,0 +1,160 @@
+﻿using System;
+using System.Linq;
+using System.Xml.Serialization;
+using System.IO;
+using System.Collections.ObjectModel;
+
+namespace Common
+{
+    /// <summary>
+    /// Allows serialization and deserialization of a generic observable collection
+    /// </summary>
+    /// <typeparam name="T"></typeparam>
+    public class SerializableCollection<T> : ObservableCollection<T>
+    {
+        ///// <summary>
+        ///// Initializes a new instance of the <see cref="T:SerializableCollection"/> class.
+        ///// </summary>
+        //public SerializableCollection()
+        //{
+            
+        //}
+
+        ///// <summary>
+        ///// Initializes a new instance of the <see cref="T:SerializableCollection"/> class.
+        ///// </summary>
+        //public SerializableCollection(IEnumerable<T> collection)
+        //{
+        //    foreach (T item in collection)
+        //    {
+        //        this.Add(item);
+        //    }
+        //}
+
+        /// <summary>
+        /// Writes to XML (Serialize)
+        /// </summary>
+        /// <param name="FileName"></param>
+        public void WriteXML(string FileName)
+        {
+            try
+            {
+                XmlSerializer xs = new XmlSerializer(typeof(ObservableCollection<T>));
+                using (StreamWriter wr = new StreamWriter(FileName))
+                    xs.Serialize(wr, this);
+            }
+            catch { }
+        }
+
+        /// <summary>
+        /// Writes to XML (Serialize)
+        /// </summary>
+        /// <returns></returns>
+        public byte[] WriteXML()
+        {
+            try
+            {
+                using (MemoryStream MemoryData = new MemoryStream())
+                {
+                    XmlSerializer xs = new XmlSerializer(typeof(ObservableCollection<T>));
+                    using (StreamWriter wr = new StreamWriter(MemoryData))
+                        xs.Serialize(wr, this);
+
+                    return MemoryData.ToArray();
+                }
+            }
+            catch { }
+
+            return null;
+        }
+
+        /// <summary>
+        /// Reads from XML (Deserialize)
+        /// </summary>
+        /// <param name="FileName"></param>
+        public void ReadXML(string FileName)
+        {
+            try
+            {
+                XmlSerializer xs = new XmlSerializer(typeof(ObservableCollection<T>));
+                using (StreamReader rd = new StreamReader(FileName))
+                {
+                    ObservableCollection<T> items = xs.Deserialize(rd) as ObservableCollection<T>;
+
+                    if (items != null)
+                        foreach (T item in items)
+                            this.Add(item);
+                }
+            }
+            catch { }
+        }
+
+        /// <summary>
+        /// Reads from XML (Deserialize)
+        /// </summary>
+        /// <param name="MemoryData"></param>
+        public void ReadXML(Stream MemoryData)
+        {
+            try
+            {
+                XmlSerializer xs = new XmlSerializer(typeof(ObservableCollection<T>));
+                using (StreamReader rd = new StreamReader(MemoryData))
+                {
+                    ObservableCollection<T> items = xs.Deserialize(rd) as ObservableCollection<T>;
+
+                    if (items != null)
+                        foreach (T item in items)
+                            this.Add(item);
+                }
+
+            }
+            catch { }
+        }
+
+        /// <summary>
+        /// Reads from XML (Deserialize)
+        /// </summary>
+        /// <param name="MemoryData"></param>
+        public void ReadXmlString(string Data)
+        {
+            try
+            {
+                ReadXML(StringToMemoryStream(Data));
+            }
+            catch { }
+        }
+
+        /// <summary>
+        /// Converts a string into a MemoryStream
+        /// </summary>
+        public MemoryStream StringToMemoryStream(string InputData)
+        {
+            try
+            {
+                return new MemoryStream(System.Text.Encoding.UTF8.GetBytes(InputData), true);
+            }
+            catch
+            {
+                return null;
+            }
+        }
+
+        public static MemoryStream StrToMemoryStream(string InputData)
+        {
+            try
+            {
+                return new MemoryStream(System.Text.Encoding.UTF8.GetBytes(InputData), true);
+            }
+            catch
+            {
+                return null;
+            }
+        }
+
+        public string ToXmlString()
+        {
+            byte[] bytes = this.WriteXML();
+            return System.Text.Encoding.UTF8.GetString(bytes, 0, bytes.Length);
+        }
+    }
+}

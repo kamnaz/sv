@@ -1,0 +1,110 @@
+﻿using System;
+using System.Collections.Generic;
+using System.ComponentModel;
+using System.IO;
+using System.Linq;
+using System.Runtime.Serialization;
+using System.Runtime.Serialization.Formatters.Binary;
+using System.Text;
+using System.Threading.Tasks;
+using System.Xml;
+using System.Xml.Serialization;
+
+namespace SimuVault.ViewModels
+{
+    [Serializable]
+    [DataContract]
+    [XmlInclude(typeof(KeyPairItem)), XmlInclude(typeof(VaultVM))]
+    public abstract class VMBase : INotifyPropertyChanged
+    {
+        [field: NonSerialized]        
+        public event PropertyChangedEventHandler PropertyChanged;
+        protected void NotifyPropertyChanged(string info)
+        {
+            if (PropertyChanged != null)
+                PropertyChanged(this, new PropertyChangedEventArgs(info));
+        }
+
+        [field: NonSerialized]
+        public event EventHandler Changed;
+        protected void RaiseChanged()
+        {
+            if (Changed != null)
+                Changed(this, null);
+        }
+
+        protected int _id;
+        [DataMember]
+        [XmlAttribute]
+        public int Id
+        {
+            get { return _id; }
+            set
+            {
+                _id = value;
+                NotifyPropertyChanged("Id");
+            }
+        }
+
+        [NonSerialized]
+        private bool _isChanged;
+        [IgnoreDataMember]
+        [XmlIgnore]
+        public bool IsChanged
+        {
+            get { return _isChanged; }
+            set
+            {
+                _isChanged = value;
+                NotifyPropertyChanged("IsChanged");
+                RaiseChanged();
+            }
+        }
+
+        protected byte[] SerializeToBinary()
+        {
+            BinaryFormatter bf = new BinaryFormatter();
+            MemoryStream ms = new MemoryStream();
+            bf.Serialize(ms, this);
+            return ms.ToArray();
+        }
+
+        protected byte[] SerializeToXML()
+        {
+            XmlSerializer serializer = new XmlSerializer(this.GetType());
+            MemoryStream ms = new MemoryStream();
+            serializer.Serialize(ms, this);
+            return ms.ToArray();
+        }
+
+        protected string SerializeToXMLAsString()
+        {
+            XmlSerializer serializer = new XmlSerializer(this.GetType());
+            MemoryStream ms = new MemoryStream();
+            serializer.Serialize(ms, this);
+            return UTF8Encoding.UTF8.GetString(ms.ToArray());
+        }
+
+        protected static T DeSerializeFromBinary<T>(byte[] bytes) where T : VMBase
+        {
+            BinaryFormatter bf = new BinaryFormatter();
+            MemoryStream ms = new MemoryStream(bytes);
+            return (T)bf.Deserialize(ms);
+        }
+
+        protected static T DeSerializeFromXML<T>(byte[] bytes) where T : VMBase
+        {
+            XmlSerializer serializer = new XmlSerializer(typeof(T));
+            MemoryStream ms = new MemoryStream(bytes);
+            return (T)serializer.Deserialize(ms);
+        }
+
+        protected static T DeSerializeFromXMLAsString<T>(string data) where T : VMBase
+        {
+            byte[] bytes = UTF8Encoding.UTF8.GetBytes(data);
+            XmlSerializer serializer = new XmlSerializer(typeof(T));
+            MemoryStream ms = new MemoryStream(bytes);
+            return (T)serializer.Deserialize(ms);
+        }
+    }
+}

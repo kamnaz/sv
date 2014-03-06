@@ -1,0 +1,46 @@
+﻿<Window x:Class="SimuVault.About"
+        xmlns="http://schemas.microsoft.com/netfx/2007/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="About"
+        Width="350"
+        Height="256"
+        FontSize="14"
+        WindowStartupLocation="CenterScreen"
+        WindowStyle="ToolWindow">
+    <Grid>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition />
+            <ColumnDefinition />
+        </Grid.ColumnDefinitions>
+        <Grid.RowDefinitions>
+            <RowDefinition />
+            <RowDefinition Height="40" />
+        </Grid.RowDefinitions>
+        <Image Grid.ColumnSpan="2"
+               Margin="3"
+               VerticalAlignment="Top"
+               Source="images\splash.png" />
+
+        <StackPanel Grid.Row="1" Grid.ColumnSpan="2">
+            <TextBlock x:Name="txtAppName"
+                       Height="20"
+                       Margin="5,0"
+                       Text="[ApplicationName]" />
+            <TextBlock x:Name="txtVersion"
+                       Height="20"
+                       Margin="5,0"
+                       Text="[Version]" />
+        </StackPanel>
+
+        <Button Grid.Row="3"
+                Grid.Column="2"
+                Width="100"
+                Height="25"
+                Margin="3"
+                HorizontalAlignment="Right"
+                Click="Button_Click_1"
+                Content="Ok"
+                IsCancel="True"
+                IsDefault="True" />
+    </Grid>
+</Window>

@@ -1,0 +1,19 @@
+﻿using System;
+using System.ComponentModel.DataAnnotations;
+using System.Linq;
+
+namespace Common
+{
+    public class WindowsLogin : Serializable<WindowsLogin>
+    {
+        [Key]
+        public string ID { get; set; }
+        public string DefaultUserName { get; set; }
+        public string DefaultPassword { get; set; }
+
+        public WindowsLogin()
+        {
+            ID = Guid.NewGuid().ToString();
+        }
+    }
+}

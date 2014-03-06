@@ -1,0 +1,36 @@
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Runtime.Serialization;
+using System.Text;
+using System.Threading.Tasks;
+using System.Xml.Serialization;
+
+namespace SimuVault.ViewModels
+{
+    [Serializable]
+    [DataContract]
+    public class Group : VMBase
+    {
+        public Group() { }
+        public Group(int id, string title, string content)
+        {
+            _id = id;
+            _title = title;
+        }
+
+        private string _title;
+        [DataMember]
+        [XmlAttribute]
+        public string Title
+        {
+            get { return _title; }
+            set
+            {
+                _title = value;
+                NotifyPropertyChanged("Title");
+                IsChanged = true;
+            }
+        }
+    }
+}
